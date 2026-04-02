@@ -1,112 +1,114 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.github.intfoo</groupId>
-  <artifactId>apipost-idea-plugin-patch-agent</artifactId>
-  <version>1.0</version>
-  <packaging>jar</packaging>
+    <groupId>com.github.intfoo</groupId>
+    <artifactId>apipost-idea-plugin-patch-agent</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
+    <name>apipost-idea-plugin-patch-agent</name>
 
-  <name>apipost-idea-plugin-patch-agent</name>
-  <url>http://maven.apache.org</url>
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 本地开发时用 -Didea.home=... 覆盖，CI 里通过命令行传入 -->
+        <idea.home>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1</idea.home>
+    </properties>
 
-  <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Javassist -->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.30.2-GA</version>
+        </dependency>
 
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- Javassist -->
-    <dependency>
-      <groupId>org.javassist</groupId>
-      <artifactId>javassist</artifactId>
-      <version>3.30.2-GA</version>
-    </dependency>
+        <!-- IDEA 平台 API：只用于编译，运行时由 IDEA 自身提供 -->
+        <!--    <dependency>-->
+        <!--      <groupId>com.jetbrains.intellij.idea</groupId>-->
+        <!--      <artifactId>ideaIC</artifactId>-->
+        <!--      <version>2025.1</version>-->
+        <!--      <scope>provided</scope>  &lt;!&ndash; ← 必须 provided，不能打进 jar &ndash;&gt;-->
+        <!--    </dependency>-->
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>core</artifactId>
+            <version>local</version>
+            <scope>system</scope>
+            <systemPath>${idea.home}/lib/intellij.platform.core.jar</systemPath>
+        </dependency>
+        <!--    UserDataHolder -->
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>util-8</artifactId>
+            <version>local</version>
+            <scope>system</scope>
+            <systemPath>${idea.home}/lib/util-8.jar</systemPath>
+        </dependency>
+        <!-- ComponentManager 所在 -->
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>util</artifactId>
+            <version>local</version>
+            <scope>system</scope>
+            <systemPath>${idea.home}/lib/util.jar</systemPath>
+        </dependency>
+        <!-- ThrowableComputable 所在 -->
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>util-rt</artifactId>
+            <version>local</version>
+            <scope>system</scope>
+            <systemPath>${idea.home}/lib/util_rt.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>openapi</artifactId>
+            <version>local</version>
+            <scope>system</scope>
+            <systemPath>${idea.home}/lib/app.jar</systemPath>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- ① 把 Javassist 一起打进最终 jar（fat jar） -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-    <!-- IDEA 平台 API：只用于编译，运行时由 IDEA 自身提供 -->
-<!--    <dependency>-->
-<!--      <groupId>com.jetbrains.intellij.idea</groupId>-->
-<!--      <artifactId>ideaIC</artifactId>-->
-<!--      <version>2025.1</version>-->
-<!--      <scope>provided</scope>  &lt;!&ndash; ← 必须 provided，不能打进 jar &ndash;&gt;-->
-<!--    </dependency>-->
-    <dependency>
-      <groupId>com.intellij</groupId>
-      <artifactId>core</artifactId>
-      <version>local</version>
-      <scope>system</scope>
-      <systemPath>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1/lib/intellij.platform.core.jar</systemPath>
-    </dependency>
-  <!--    UserDataHolder -->
-    <dependency>
-      <groupId>com.intellij</groupId>
-      <artifactId>util-8</artifactId>
-      <version>local</version>
-      <scope>system</scope>
-      <systemPath>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1/lib/util-8.jar</systemPath>
-    </dependency>
-    <!-- ComponentManager 所在 -->
-    <dependency>
-      <groupId>com.intellij</groupId>
-      <artifactId>util</artifactId>
-      <version>local</version>
-      <scope>system</scope>
-      <systemPath>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1/lib/util.jar</systemPath>
-    </dependency>
-    <!-- ThrowableComputable 所在 -->
-    <dependency>
-      <groupId>com.intellij</groupId>
-      <artifactId>util-rt</artifactId>
-      <version>local</version>
-      <scope>system</scope>
-      <systemPath>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1/lib/util_rt.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>com.intellij</groupId>
-      <artifactId>openapi</artifactId>
-      <version>local</version>
-      <scope>system</scope>
-      <systemPath>D:/Program Files/JetBrains/IntelliJ IDEA 2025.3.1/lib/app.jar</systemPath>
-    </dependency>
-  </dependencies>
-  <build>
-    <plugins>
-      <!-- ① 把 Javassist 一起打进最终 jar（fat jar） -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.2</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals><goal>shade</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- ② 生成正确的 MANIFEST.MF，Agent 必须有 Premain-Class -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.3.0</version>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Premain-Class>com.github.intfoo.agent.AgentMain</Premain-Class>
-              <Can-Retransform-Classes>false</Can-Retransform-Classes>
-              <!-- 如果你的 Agent 需要在 JDK 17+ 访问内部 API 则加这行 -->
-               <Add-Opens>java.base/java.lang=ALL-UNNAMED</Add-Opens>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+            <!-- ② 生成正确的 MANIFEST.MF，Agent 必须有 Premain-Class -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>com.github.intfoo.agent.AgentMain</Premain-Class>
+                            <Can-Retransform-Classes>false</Can-Retransform-Classes>
+                            <!-- 如果你的 Agent 需要在 JDK 17+ 访问内部 API 则加这行 -->
+                            <Add-Opens>java.base/java.lang=ALL-UNNAMED</Add-Opens>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
