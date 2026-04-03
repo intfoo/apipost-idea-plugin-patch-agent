@@ -25,7 +25,7 @@ jobs:
       # 替换 pom.xml 里写死的本地 IDEA 路径
       - name: Download IDEA for compile deps
         run: |
-          wget -q "https://download.jetbrains.com/idea/ideaIC-2025.1.tar.gz" -O idea.tar.gz
+          wget -q "https://download-cdn.jetbrains.com/idea/idea-2026.1.tar.gz" -O idea.tar.gz
           tar -xzf idea.tar.gz
           ls -la          # ← 加这行，看解压出来的目录名
           # 重命名为固定目录名，方便后续引用
