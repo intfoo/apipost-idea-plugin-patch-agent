@@ -27,6 +27,7 @@ jobs:
         run: |
           wget -q "https://download.jetbrains.com/idea/ideaIC-2025.1.tar.gz" -O idea.tar.gz
           tar -xzf idea.tar.gz
+          ls -la          # ← 加这行，看解压出来的目录名
           # 重命名为固定目录名，方便后续引用
           mv idea-IC-* idea
 
