@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # 只有推送 v 开头的 tag 才触发
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 必须，否则无法创建 Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven        # 自动缓存 ~/.m2，加速构建
+
+      # 替换 pom.xml 里写死的本地 IDEA 路径
+      - name: Download IDEA for compile deps
+        run: |
+          wget -q "https://download.jetbrains.com/idea/ideaIC-2025.1.tar.gz" -O idea.tar.gz
+          tar -xzf idea.tar.gz
+          # 重命名为固定目录名，方便后续引用
+          mv idea-IC-* idea
+
+      - name: Build with Maven
+        run: |
+          mvn clean package -DskipTests \
+            -Didea.home=${{ github.workspace }}/idea
+        # pom.xml 里的 systemPath 改用 ${idea.home}/lib/xxx.jar
+
+      # 从 tag 名提取版本号，去掉开头的 v
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.VERSION }}"
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true    # 自动从 commit 生成 changelog
+          files: |
+            target/apipost-idea-plugin-patch-agent-${{ steps.version.outputs.VERSION }}.jar
