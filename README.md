@@ -136,3 +136,14 @@ Get-ChildItem "$ideaLib\*.jar" | ForEach-Object {
 - `StaticHelper.runInReadAction` 内部使用反射调用原方法，有轻微性能开销。对于调用频繁的热点方法，可在 `StaticHelper` 中为其单独编写具名静态方法以避免反射。
 - `scope=system` 的 IDEA 依赖与本机安装路径绑定，换机器需修改 `pom.xml`。
 - 仅针对 Apipost IDEA 插件 v1.0.23 和 IDEA 202６.1 测试，其他版本未验证。
+
+## 版本号管理建议
+  发布前用 Maven 统一更新版本号，不要手动改 pom.xml：
+  ```bash
+  # 发布 1.1
+  mvn versions:set "-DnewVersion=1.1"   # 改版本号
+  mvn versions:commit                    # 删备份  git add pom.xml
+  git commit -m "release: v1.1.0"
+  git tag v1.1.0
+  git push origin main --tags
+  ```

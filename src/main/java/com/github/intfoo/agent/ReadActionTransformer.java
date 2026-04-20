@@ -77,6 +77,7 @@ public class ReadActionTransformer implements ClassFileTransformer {
         CtClass declaring = method.getDeclaringClass();
         String originalName = "_original_" + method.getName();
 
+        // 复制原方法，改为私有
         CtMethod copy = CtNewMethod.copy(method, originalName, declaring, null);
         copy.setModifiers(Modifier.PRIVATE
                 | (Modifier.isStatic(method.getModifiers()) ? Modifier.STATIC : 0));
@@ -85,8 +86,16 @@ public class ReadActionTransformer implements ClassFileTransformer {
         CtClass[] paramTypes = method.getParameterTypes();
         CtClass returnType = method.getReturnType();
         boolean isVoid = returnType == CtClass.voidType;
+        boolean isStatic = Modifier.isStatic(method.getModifiers());
 
-        // 构造 paramTypes 数组字面量，例如：new Class[]{String.class, int.class}
+        // 静态方法 target 传 null，实例方法传 this
+        String targetArg = isStatic ? "null" : "this";
+        // 静态方法传类名用于反射，实例方法传 null
+        String classNameArg = isStatic
+                ? "\"" + declaring.getName() + "\""
+                : "null";
+
+        // 构造 new Class[]{...}
         StringBuilder classArray = new StringBuilder("new Class[]{");
         for (int i = 0; i < paramTypes.length; i++) {
             if (i > 0) classArray.append(", ");
@@ -98,32 +107,37 @@ public class ReadActionTransformer implements ClassFileTransformer {
         }
         classArray.append("}");
 
-        // 构造 params 数组字面量，例如：new Object[]{$1, $2}
+        // 构造 new Object[]{...}，$w 负责基本类型装箱，在顶层可用
         StringBuilder objArray = new StringBuilder("new Object[]{");
         for (int i = 0; i < paramTypes.length; i++) {
             if (i > 0) objArray.append(", ");
-            objArray.append("($w)$").append(i + 1);  // $w 在顶层可以用，负责基本类型装箱
+            objArray.append("($w)$").append(i + 1);
         }
         objArray.append("}");
+        // 静态方法：classLoader 用当前类的 ClassLoader
+        String classLoaderArg = isStatic
+                ? declaring.getName() + ".class.getClassLoader()"
+                : "null";
+
+        // 公共调用片段
+        String call = "com.github.intfoo.agent.StaticHelper.runInReadAction("
+                + targetArg + ", "
+                + classNameArg + ", "
+                + classLoaderArg + ", "   // ← 新增
+                + "\"" + originalName + "\", "
+                + objArray + ", "
+                + classArray + ")";
 
         StringBuilder body = new StringBuilder("{\n");
 
         if (isVoid) {
-            body.append("  com.github.intfoo.agent.StaticHelper.runInReadAction(")
-                    .append("this, \"").append(originalName).append("\", ")
-                    .append(objArray).append(", ").append(classArray).append(");\n");
+            body.append("  ").append(call).append(";\n");
         } else if (returnType.isPrimitive()) {
             String wrapper = getPrimitiveWrapper(returnType);
-            body.append("  return ((").append(wrapper).append(")")
-                    .append(" com.github.intfoo.agent.StaticHelper.runInReadAction(")
-                    .append("this, \"").append(originalName).append("\", ")
-                    .append(objArray).append(", ").append(classArray).append("))")
+            body.append("  return ((").append(wrapper).append(") ").append(call).append(")")
                     .append(".").append(getPrimitiveUnboxMethod(returnType)).append("();\n");
         } else {
-            body.append("  return (").append(returnType.getName()).append(")")
-                    .append(" com.github.intfoo.agent.StaticHelper.runInReadAction(")
-                    .append("this, \"").append(originalName).append("\", ")
-                    .append(objArray).append(", ").append(classArray).append(");\n");
+            body.append("  return (").append(returnType.getName()).append(") ").append(call).append(";\n");
         }
 
         body.append("}");
