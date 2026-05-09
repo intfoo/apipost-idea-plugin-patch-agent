@@ -1,10 +1,34 @@
-# 时间紧迫？
-直接下载打包好的 ：[Release：apipost-idea-plugin-patch-agent-xx.jar](https://github.com/intfoo/apipost-idea-plugin-patch-agent/releases)。跳到 [安装使用](#安装使用)章节查看用法。
+# 使用方式
+**如果你只是为了能让插件正常使用，只看本章节即可。**
+## 第一步：下载
+直接下载打包好的jar ：[Release：apipost-idea-plugin-patch-agent-xx.jar](https://github.com/intfoo/apipost-idea-plugin-patch-agent/releases)。
+## 第二步：配置
+
+找到 IDEA 配置目录下的 JVM 参数文件，一般文件后缀为 **.vmoptions** ，可以全局搜索。有的人可能会有多个此文件，需要确定idea用的是哪个，如果不确定，那就都改一下吧：
+
+- Windows：`%APPDATA%\JetBrains\IntelliJIdea2025.x\idea64.exe.vmoptions`
+- macOS：`~/Library/Application Support/JetBrains/IntelliJIdea2025.x/idea.vmoptions`
+- Linux：`~/.config/JetBrains/IntelliJIdea2025.x/idea64.vmoptions`
+
+在文件末尾添加一行，注意后面要**替换成你上一步下载的jar的实际地址**，配置错了idea会无法启动：
+
+```
+-javaagent:C:/path/to/apipost-idea-plugin-patch-agent-1.1.jar
+```
+## 第三步：重启idea
+重启 IDEA 后生效。日志中出现以下输出说明 Agent 加载成功：
+
+```
+[ReadActionPatch] Agent loaded
+[ReadActionPatch] patched: cn/apipost/restful/debug/RestServiceDetail#setApiService
+[ReadActionPatch] patched: cn/apipost/restful/debug/CustomEditor#createDocument
+...
+```
+
 # apipost-idea-plugin-patch-agent
 
 一个 Java Agent，用于在运行时自动修复旧版 Apipost IDEA 插件中大量 `Read access is allowed from inside read-action only` 异常。
 
-章节。
 ## 背景
 
  Apipost IDEA 官方插件（v1.0.23）在多处直接在 EDT（Event Dispatch Thread）上访问 PSI/模型 API，未包裹在 ReadAction 中，导致 IDEA 2025.x 频繁抛出：
@@ -67,28 +91,6 @@ mvn clean package -DskipTests
 
 产物为 `target/apipost-idea-plugin-patch-agent-1.0.jar`（带 `original-` 前缀的是备份，不用它）。
 
-## 安装使用
-
-找到 IDEA 配置目录下的 JVM 参数文件：
-
-- Windows：`%APPDATA%\JetBrains\IntelliJIdea2025.x\idea64.exe.vmoptions`
-- macOS：`~/Library/Application Support/JetBrains/IntelliJIdea2025.x/idea.vmoptions`
-- Linux：`~/.config/JetBrains/IntelliJIdea2025.x/idea64.vmoptions`
-
-在文件末尾添加一行：
-
-```
--javaagent:C:/path/to/apipost-idea-plugin-patch-agent-1.0.jar
-```
-
-重启 IDEA 后生效。日志中出现以下输出说明 Agent 加载成功：
-
-```
-[ReadActionPatch] Agent loaded
-[ReadActionPatch] patched: cn/apipost/restful/debug/RestServiceDetail#setApiService
-[ReadActionPatch] patched: cn/apipost/restful/debug/CustomEditor#createDocument
-...
-```
 
 ## 新增修复目标
 
